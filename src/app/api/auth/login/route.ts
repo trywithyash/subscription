@@ -30,10 +30,16 @@ export async function POST(req: Request) {
     }
 
     const token = generateJWT(user._id.toString());
-    return NextResponse.json(
-      { message: "Login successful", token },
+    const res = NextResponse.json(
+      { message: "Login successful" },
       { status: 200 }
     );
+     res.cookies.set("token", token, {
+      httpOnly: true,
+      maxAge: 60 * 60 * 24,
+      path: "/",
+    });
+    return res;
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(

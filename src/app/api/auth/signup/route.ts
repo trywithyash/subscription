@@ -17,7 +17,7 @@ export async function POST(req:Request){
     if (existingUser) {
       return NextResponse.json({ message: 'User already exists' }, { status: 409 });
     }
-     const hashed = await hashPassword(password);
+    const hashed = await hashPassword(password);
     const newUser = await User.create({ email, password: hashed });
 
     return NextResponse.json({ message: 'User created', userId: newUser._id }, { status: 201 });
