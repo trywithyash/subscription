@@ -1,10 +1,28 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [message, setMessage] = useState('');
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const status = searchParams.get('status');
+    if (status === 'success') {
+      setMessage('Subscription successful!');
+    } else if (status === 'cancel') {
+      setMessage('Subscription cancelled.');
+    }
+
+   
+    if (status) {
+      const timer = setTimeout(() => setMessage(''), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');

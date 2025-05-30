@@ -12,7 +12,6 @@ export const authenticateUser=async (req:NextRequest)=>{
     const token = authHeader.split(' ')[1];
      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
 
-    // You can attach the user ID to request headers (or return it for handler to use)
     return { userId: decoded.userId };
  } catch (error) {
         return NextResponse.json({ message: 'Invalid or expired token' , error}, { status: 401 });
