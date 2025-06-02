@@ -1,9 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import envConfig from "@/config/env";
 import { useState } from "react";
-
+import axios from 'axios';
 const plans = [
   {
     name: "Basic Monthly",
@@ -44,63 +43,56 @@ const plans = [
 ];
 
 export default function SubscriptionPage() {
-  const router = useRouter();
-  const [coupon, setCoupon] = useState("");
+  const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const handleSubscribe = async (priceId: string) => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ priceId }),
-      });
+  try {
+    setLoadingId(priceId);
 
-      const data = await res.json();
-      if (res.ok) {
-        router.push(data.url);
-      } else {
-        alert(data.message);
+    const token = localStorage.getItem('token'); 
+    const response = await axios.post(
+      "/api/stripe/checkout",
+      { priceId },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,  
+        },
       }
-    } catch (err) {
-      alert("Subscription failed.");
-      console.error("Error:", err);
+    );
+
+    if (response.data?.url) {
+      window.location.href = response.data.url;
     }
-  };
+  } catch (err) {
+    console.error("Checkout failed", err);
+  } finally {
+    setLoadingId(null);
+  }
+};
 
   return (
-    <main className="min-h-screen bg-white py-20 px-6">
-      <h1 className="text-4xl font-bold text-center mb-10">Choose Your Plan</h1>
-      <div className="max-w-md mx-auto mb-10">
-        <input
-          type="text"
-          value={coupon}
-          onChange={(e) => setCoupon(e.target.value)}
-          placeholder="Enter coupon code (optional)"
-          className="w-full border rounded px-4 py-2 text-lg"
-        />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+    <div className="min-h-screen px-4 py-12 max-w-4xl mx-auto">
+      <h1 className="text-3xl font-bold mb-8 text-center">Choose Your Plan</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {plans.map((plan) => (
           <div
             key={plan.name}
-            className="border border-gray-200 rounded-xl p-6 shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-xl bg-gradient-to-b from-white to-gray-50"
+            className="border p-6 rounded-lg shadow hover:shadow-lg transition"
           >
-            <h2 className="text-2xl font-semibold mb-2">{plan.name}</h2>
-            <p className="text-gray-700 mb-4">{plan.description}</p>
-            <div className="text-3xl font-bold mb-6">{plan.price}</div>
+            <h2 className="text-xl font-semibold mb-2">{plan.name}</h2>
+            <p className="text-gray-700 mb-2">{plan.price}</p>
+            <p className="text-sm text-gray-500 mb-4">{plan.description}</p>
             <button
-              onClick={() => handleSubscribe(plan.stripePriceId!)}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg transition-all"
+              disabled={loadingId === plan.stripePriceId}
+              onClick={() => handleSubscribe(plan.stripePriceId)}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
             >
-              Subscribe
+              {loadingId === plan.stripePriceId ? "Redirecting..." : "Subscribe"}
             </button>
           </div>
         ))}
       </div>
-    </main>
+    </div>
   );
 }

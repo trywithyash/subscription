@@ -1,6 +1,6 @@
 import { connectDB } from "@/config/db";
 import { NextResponse } from "next/server";
-import User from "@/models/userModel";
+import {User} from "@/models/userModel";
 import { comparePassword, generateJWT } from "@/utils/auth";
 
 export async function POST(req: Request) {
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       { message: "Login successful" },
       { status: 200 }
     );
-     res.cookies.set("token", token, {
+    res.cookies.set("token", token, {
       httpOnly: true,
       maxAge: 60 * 60 * 24,
       path: "/",

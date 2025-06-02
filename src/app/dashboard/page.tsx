@@ -1,47 +1,56 @@
-'use client';
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import jwt from "jsonwebtoken";
+import envConfig from "@/config/env";
+import { connectDB } from "@/config/db";
+import { User } from "@/models/userModel";
+const { JWT_SECRET } = envConfig;
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
+export default async function DashboardPage() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const [message, setMessage] = useState('');
-  const searchParams = useSearchParams();
+  if (!token) {
+    return redirect("/auth");
+  }
 
-  useEffect(() => {
-    const status = searchParams.get('status');
-    if (status === 'success') {
-      setMessage('Subscription successful!');
-    } else if (status === 'cancel') {
-      setMessage('Subscription cancelled.');
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
+    await connectDB();
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return redirect("/auth");
     }
 
-   
-    if (status) {
-      const timer = setTimeout(() => setMessage(''), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [searchParams]);
+    const subscribed =
+      user.isSubscribed && user.subscriptionStatus === "active";
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) router.push('/auth'); 
-  }, [router]);
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-center">
+        <h1 className="text-3xl font-bold mb-4">Welcome to your Dashboard</h1>
 
-  return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
-      <h1 className="text-3xl font-bold mb-4 text-center">Welcome to Your Dashboard</h1>
-      <p className="text-gray-600 mb-8 text-center max-w-md"> You are logged in. Get a subscription to unlock premium features like analytics, automation,
-        and priority support.
-      </p>
-
-      <button
-        onClick={() => router.push('/subscription')}
-        className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg text-lg transition-transform hover:scale-105 shadow-md"
-      >
-        Get Subscription
-      </button>
-    </main>
-  );
+        {subscribed ? (
+          <p className="text-green-600 font-semibold">
+            You are subscribed to the {user.subscriptionPlan} plan.
+          </p>
+        ) : (
+          <>
+            <p className="text-red-600 font-semibold">
+              You are not subscribed.
+            </p>
+            <a
+              href="/subscription"
+              className="mt-4 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Choose a Subscription Plan
+            </a>
+          </>
+        )}
+      </div>
+    );
+  } catch (err) {
+    console.error("Error verifying token:", err);
+    return redirect("/auth");
+  }
 }

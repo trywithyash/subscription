@@ -1,6 +1,6 @@
 import { hashPassword } from "@/utils/auth";
 import { NextResponse } from "next/server";
-import User from '@/models/userModel';
+import {User} from '@/models/userModel';
 import { connectDB } from "@/config/db";
 
 

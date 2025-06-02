@@ -10,10 +10,12 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.20.1",
+    "axios": "^1.9.0",
     "bcrypt": "^6.0.0",
     "dotenv": "^16.5.0",
     "jsonwebtoken": "^9.0.2",
     "micro": "^10.0.1",
+    "mongodb": "^6.16.0",
     "mongoose": "^8.14.3",
     "next": "15.3.2",
     "next-auth": "^4.24.11",
