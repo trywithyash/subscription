@@ -54,17 +54,12 @@ export default function SubscriptionPage() {
 
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
 
-      const response = await axios.post(
-        "/api/stripe/checkout",
-        { priceId: selectedPriceId, coupon, plan: selectedPlan },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axios.post("/api/stripe/checkout", {
+        priceId: selectedPriceId,
+        coupon,
+        plan: selectedPlan,
+      });
 
       if (response.data?.url) {
         window.location.href = response.data.url;
@@ -97,7 +92,6 @@ export default function SubscriptionPage() {
         </button>
       </div>
 
-      {/* Plans section */}
       <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {plans.map((plan) => (
           <div
@@ -114,10 +108,14 @@ export default function SubscriptionPage() {
             <p className="text-sm text-gray-600 mb-2">{plan.description}</p>
             <span
               className={`inline-block px-3 py-1 text-sm rounded-full ${
-                selectedPriceId === plan.stripePriceId ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"
+                selectedPriceId === plan.stripePriceId
+                  ? "bg-blue-100 text-blue-700"
+                  : "bg-gray-100 text-gray-600"
               }`}
             >
-              {selectedPriceId === plan.stripePriceId ? "Selected" : "Click to select"}
+              {selectedPriceId === plan.stripePriceId
+                ? "Selected"
+                : "Click to select"}
             </span>
           </div>
         ))}
