@@ -35,27 +35,30 @@ export default async function handler(req: any, res: any) {
 
   try {
     switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        const customerId = session.customer as string;
+     case "checkout.session.completed": {
+  const session = event.data.object as Stripe.Checkout.Session;
+  const customerId = session.customer as string;
 
-        const user = await User.findOne({ stripeCustomerId: customerId });
-        if (user && session.subscription) {
-          const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+  const user = await User.findOne({ stripeCustomerId: customerId });
+  if (user && session.subscription) {
+    const subscription = await stripe.subscriptions.retrieve(
+      session.subscription as string
+    ) as Stripe.Subscription;
 
-          user.isSubscribed = true;
-          user.subscriptionStatus = subscription.status as any;
-          user.subscriptionPlan = session.metadata?.plan || "basic";
+    user.isSubscribed = true;
+    user.subscriptionStatus = subscription.status as any;
+    user.subscriptionPlan = session.metadata?.plan || "basic";
+    user.subscriptionEndsAt = subscription.current_period_end
+      ? new Date(subscription.current_period_end * 1000)
+      : undefined;
+    user.stripeSubscriptionId = subscription.id;
+    await user.save();
 
-          user.subscriptionEndsAt = subscription.current_period_end
-            ? new Date(subscription.current_period_end * 1000)
-            : undefined;
+    await sendSubscriptionEmail(user.email, user.subscriptionPlan);
+  }
+  break;
+}
 
-          user.stripeSubscriptionId = subscription.id;
-          await user.save();
-        }
-        break;
-      }
 
       case "customer.subscription.updated":
       case "customer.subscription.created": {

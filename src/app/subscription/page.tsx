@@ -1,95 +1,124 @@
 "use client";
 
-import envConfig from "@/config/env";
 import { useState } from "react";
-import axios from 'axios';
+import axios from "axios";
+import envConfig from "@/config/env";
+
 const plans = [
   {
     name: "Basic Monthly",
-    price: "$10 for 30 days",
     stripePriceId: envConfig.STRIPE_PRICE_MONTHLY_BASIC,
+    plan: "basic",
     description: "Billed monthly. Cancel anytime.",
   },
   {
     name: "Intermediate Monthly",
-    price: "$20 for 30 days",
     stripePriceId: envConfig.STRIPE_PRICE_MONTHLY_INTERMEDIATE,
+    plan: "intermediate",
     description: "Billed monthly. Cancel anytime.",
   },
   {
     name: "Pro Monthly",
-    price: "$30 for 30 days",
     stripePriceId: envConfig.STRIPE_PRICE_MONTHLY_PRO,
+    plan: "pro",
     description: "Billed monthly. Cancel anytime.",
   },
   {
     name: "Basic Yearly",
-    price: "$100 for 365 days",
     stripePriceId: envConfig.STRIPE_PRICE_YEARLY_BASIC,
+    plan: "basic",
     description: "Billed yearly. Save 15%.",
   },
   {
     name: "Intermediate Yearly",
-    price: "$200 for 365 days",
     stripePriceId: envConfig.STRIPE_PRICE_YEARLY_INTERMEDIATE,
+    plan: "intermediate",
     description: "Billed yearly. Save 15%.",
   },
   {
     name: "Pro Yearly",
-    price: "$300 for 365 days",
     stripePriceId: envConfig.STRIPE_PRICE_YEARLY_PRO,
+    plan: "pro",
     description: "Billed yearly. Save 15%.",
   },
 ];
 
 export default function SubscriptionPage() {
-  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [selectedPriceId, setSelectedPriceId] = useState("");
+  const [selectedPlan, setSelectedPlan] = useState("");
+  const [coupon, setCoupon] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubscribe = async (priceId: string) => {
-  try {
-    setLoadingId(priceId);
+  const handleSubscribe = async () => {
+    if (!selectedPriceId) return;
 
-    const token = localStorage.getItem('token'); 
-    const response = await axios.post(
-      "/api/stripe/checkout",
-      { priceId },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,  
-        },
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+
+      const response = await axios.post(
+        "/api/stripe/checkout",
+        { priceId: selectedPriceId, coupon, plan: selectedPlan },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data?.url) {
+        window.location.href = response.data.url;
       }
-    );
-
-    if (response.data?.url) {
-      window.location.href = response.data.url;
+    } catch (err) {
+      alert("Checkout failed. Please try again or check your coupon code.");
+      console.error("Checkout error:", err);
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error("Checkout failed", err);
-  } finally {
-    setLoadingId(null);
-  }
-};
+  };
 
   return (
-    <div className="min-h-screen px-4 py-12 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8 text-center">Choose Your Plan</h1>
+    <div className="min-h-screen px-4 py-12 max-w-6xl mx-auto grid md:grid-cols-4 gap-8">
+      <div className="md:col-span-1 border rounded-lg p-6 shadow">
+        <h2 className="text-xl font-semibold mb-4">Promo Code</h2>
+        <input
+          type="text"
+          placeholder="Enter coupon (optional)"
+          value={coupon}
+          onChange={(e) => setCoupon(e.target.value)}
+          className="w-full border px-3 py-2 rounded mb-4"
+        />
+        <button
+          onClick={handleSubscribe}
+          disabled={!selectedPriceId || loading}
+          className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          {loading ? "Processing..." : "Purchase Subscription"}
+        </button>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Plans section */}
+      <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {plans.map((plan) => (
           <div
             key={plan.name}
-            className="border p-6 rounded-lg shadow hover:shadow-lg transition"
+            onClick={() => {
+              setSelectedPriceId(plan.stripePriceId);
+              setSelectedPlan(plan.plan);
+            }}
+            className={`border p-6 rounded-lg shadow cursor-pointer transition hover:shadow-lg ${
+              selectedPriceId === plan.stripePriceId ? "border-blue-600" : ""
+            }`}
           >
             <h2 className="text-xl font-semibold mb-2">{plan.name}</h2>
-            <p className="text-gray-700 mb-2">{plan.price}</p>
-            <p className="text-sm text-gray-500 mb-4">{plan.description}</p>
-            <button
-              disabled={loadingId === plan.stripePriceId}
-              onClick={() => handleSubscribe(plan.stripePriceId)}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+            <p className="text-sm text-gray-600 mb-2">{plan.description}</p>
+            <span
+              className={`inline-block px-3 py-1 text-sm rounded-full ${
+                selectedPriceId === plan.stripePriceId ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"
+              }`}
             >
-              {loadingId === plan.stripePriceId ? "Redirecting..." : "Subscribe"}
-            </button>
+              {selectedPriceId === plan.stripePriceId ? "Selected" : "Click to select"}
+            </span>
           </div>
         ))}
       </div>
